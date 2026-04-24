@@ -178,6 +178,7 @@ public class Enemy : MonoBehaviour
     private void HurtPlayer(PlayerController player)
     {
         Debug.Log("Player hit by enemy!");
+        player.removeLife(1);
     }
 
     private void OnDrawGizmosSelected()

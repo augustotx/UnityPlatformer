@@ -1,7 +1,17 @@
 using UnityEngine;
+using TMPro;
+using UnityEngine.SceneManagement; 
 
 public class PlayerController : MonoBehaviour
 {
+
+    [Header("Game Logic")]
+    public int coinsToCollect = 20;
+    [SerializeField] private int lives = 3;
+    [SerializeField] private int points = 0;
+    private float invincibleTimer = 0f;
+    private bool isInvincible = false;
+
     [Header("Movement Settings")]
     [SerializeField] private float moveSpeed = 8f;
     [SerializeField] private float jumpForce = 12f;
@@ -12,6 +22,12 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private Transform groundCheckPoint;
     [SerializeField] private Vector2 groundCheckSize = new Vector2(0.5f, 0.1f);
     [SerializeField] private LayerMask groundLayer;
+
+
+    [Header("UI")]
+    public TextMeshProUGUI pointText;
+    public TextMeshProUGUI lifeText;
+
 
     [Header("Components")]
     private Rigidbody2D rb;
@@ -30,16 +46,24 @@ public class PlayerController : MonoBehaviour
         rb.freezeRotation = true;
     }
 
+    private void Start()
+    {
+        pointText.text = "0";
+        lifeText.text = $"{lives}";
+    }
+
     private void Update()
     {
+        if (coinsToCollect <= 0) EndLevel();
+        if (this.transform.position.y <= -7.6f) Die();
+        if (isInvincible) invincibleTimer += Time.deltaTime;
+        if (invincibleTimer >= 3f)
+        {
+            isInvincible = false;
+            invincibleTimer = 0f;
+        }
         // Read input
-        horizontalInput = Input.GetAxisRaw("Horizontal"); // A = -1, D = 1
-        // Alternative: explicit keys if you prefer
-        // float h = 0;
-        // if (Input.GetKey(KeyCode.A)) h = -1;
-        // if (Input.GetKey(KeyCode.D)) h = 1;
-        // horizontalInput = h;
-
+        horizontalInput = Input.GetAxisRaw("Horizontal");
         // Jump (W key)
         if (Input.GetKeyDown(KeyCode.W) && isGrounded)
         {
@@ -116,5 +140,42 @@ public class PlayerController : MonoBehaviour
         if (groundCheckPoint == null) return;
         Gizmos.color = Color.red;
         Gizmos.DrawWireCube(groundCheckPoint.position, groundCheckSize);
+    }
+
+
+    public void addLife(int n)
+    {
+        lives += n;
+        lifeText.text = $"{lives}";
+    }
+    public void addPoints(int n)
+    {
+        points += n;
+        pointText.text = $"{points}";
+
+        if (points % 100 == 0) addLife(1);
+    }
+
+    public void removeLife(int n)
+    {
+        if(isInvincible) return;
+        isInvincible = true;
+        lives -= n;
+        lifeText.text = $"{lives}";
+
+        if (lives <= 0) Die();
+    }
+
+    public void Die()
+    {
+        Debug.Log("Player has zero lives!");
+        SceneManager.LoadScene("Defeat");
+    }
+
+    private void EndLevel()
+    {
+        Scene curScene = SceneManager.GetActiveScene();
+        if (curScene.name == "Lvl1") SceneManager.LoadScene("Lvl2");
+        if (curScene.name == "Lvl2") SceneManager.LoadScene("Victory");
     }
 }
